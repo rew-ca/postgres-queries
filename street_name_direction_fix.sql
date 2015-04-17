@@ -26,9 +26,9 @@ select *,
 from properties
 where ((unit_number !~~* '%bl%' and unit_number !~~* '%lt%' and unit_number !~~* '%lot%' and unit_number !~~* '%sl%' and unit_number !~~* '%pcl%' and unit_number !~~* '%parcel%') or unit_number is null) 
 and 
-((street_name !~~* '%no name%' and street_name !~~* 'lot %') or street_name is null)
+((street_name !~~* '%no name%' and street_name not similar to '%(Lot | Lt )%' and street_name !~~* '%right of way%' and street_name !~~* '%access line%') or street_name is null)
 and
-((street_number !~~* '%bl%' and street_number !~~* '%lt%' and street_number !~~* '%lot%' and street_number !~~* '%sl%' and street_number !~~* '%pcl%' and street_number !~~* '%parcel%' and street_number !~~* '%.%' and street_number !~~* '"road"' and street_number !~~* '%(itel)%' and street_number !~~* '%mile%') or street_number is null)
+((street_number !~~* '%bl%' and street_number !~~* '%lt%' and street_number !~~* '%lot%' and street_number !~~* '%sl%' and street_number !~~* '%pcl%' and street_number !~~* '%parcel%' and street_number !~~* '%.%' and street_number !~~* '"road"' and street_number !~~* '%(itel)%' and street_number !~~* '%mile%' and street_number !~~* '%track%' and street_number !~~* '%rogers%' and street_number !~~* 'rrrrr' and street_number !~~* '%cls%' and street_number !~~* '%fsf%' and street_number !~~* '%access%' and street_number !~~* '%lane%' and street_number !~~* '%paper%' and street_number !~~* '%scott%') or street_number is null)
 and 
 street_name !~~* 'Address Assigned Bb Street' 
 										)
@@ -38,6 +38,13 @@ street_name !~~* 'Address Assigned Bb Street'
 select *,
 	case when street_number !~ '^[0-9]+$' and unit_number ~ '^[0-9]+$'
 	then street_number || ' ' || street_name0
+
+	when street_number ~~* 'dl%' and street_name0 ~ '^[0-9]+$'
+	then null
+
+	when street_number similar to '(Agamemnon|Anderson|Best|Britannia|Cheekye|Copper|Crystal|Eagle|Five|Helga|Indian|Old|Sandy|Squamish|Vedder|Vista|Zero)'
+	then street_number || ' ' || street_name0 
+	
 	else street_name0
 	end street_name1,
 
@@ -47,8 +54,28 @@ select *,
 	when street_number ~~ '%-%'
 	then (string_to_array(street_number, '-'))[array_upper(string_to_array(street_number, '-'), 1)]
 
-	when street_number ~~ '0'
+	when street_number similar to '(0|Week|Wk|Th%|Ph%)'
 	then null
+
+	when street_number ~~* 'dl%'
+	then 
+		case when street_name0 ~ '^[0-9]+$'
+		then upper(street_number) || street_name0
+		
+		else upper(street_number)
+		end
+
+	when street_number ~~* '%-'
+	then regexp_replace(street_number, '-$', '')
+
+	when regexp_replace(street_number, '[a-z]', '', 'gi') ~~ ''
+	then
+		case when char_length(street_number) = 1 or street_number similar to '(VACANT|Unit|Upper|Sub|Lainl|Agamemnon|Anderson|Best|Britannia|Cheekye|Copper|Crystal|Eagle|Five|Helga|Indian|Old|Sandy|Squamish|Vedder|Vista|Zero)'
+		then null
+
+		else street_number
+
+		end
 	
 	else street_number
 	end street_number1,
@@ -82,6 +109,12 @@ select *,
 
 	when (unit_number similar to 'P%' and substring(unit_number, 2, char_length(unit_number)) ~ '^[0-9]') or unit_number similar to '(P-|PH |PH-)%'
 	then regexp_replace(unit_number, '(P|P-|PH |PH-|PH.)', 'PH', 'g')
+
+	when street_number similar to '(Th|Ph)%'
+	then upper(street_number)
+
+	when regexp_replace(unit_number, '[a-z]', '', 'gi') ~~ '' and char_length(unit_number) > 1 and unit_number not similar to '%(TH|PH|UPPER|LOWER|MAIN)%'
+	then null
 	
 	else unit_number
 	end unit_number1
@@ -185,6 +218,15 @@ then regexp_replace(street_name1, '0ld Yale Road', 'Old Yale Road', 'g')
 when street_name1 ~~* '%O Avenue%'
 then regexp_replace(street_name1, 'O Avenue', '0 Avenue', 'g')
 
+when street_name1 ~~* '%S0uthmere Crescent%'
+then regexp_replace(street_name1, 'S0uthmere Crescent', 'Southmere Crescent', 'g')
+
+when street_name1 ~~* '%1o1 Bb Highway%'
+then regexp_replace(street_name1, '1o1 Bb Highway', '101 Highway', 'g')
+
+when street_name1 ~~* '%Whitestone Islan Bb%'
+then regexp_replace(street_name1, 'Whitestone Islan Bb', 'Whitestone Island', 'g')
+
 when street_name1 ~~* '%St Street%'
 then regexp_replace(street_name1, 'St Street', 'Street', 'g')
 
@@ -202,6 +244,15 @@ then regexp_replace(street_name1, 'Road Road', 'Road', 'g')
 
 when street_name1 ~~* '%Crescent Crescent%'
 then regexp_replace(street_name1, 'Crescent Crescent', 'Crescent', 'g')
+
+when street_name1 ~~* '%Highway Highway%'
+then regexp_replace(street_name1, 'Highway Highway', 'Highway', 'g')
+
+when street_name1 ~~* '%Way Way%'
+then regexp_replace(street_name1, 'Way Way', 'Way', 'g')
+
+when street_name1 ~~* '%Rd Road%'
+then regexp_replace(street_name1, 'Rd Road', 'Road', 'g')
 
 else street_name1 
 
@@ -227,6 +278,15 @@ select *,
 
 	when ' ' || street_name2 || ' ' ~~* '% Ave %'
 	then trim(both ' ' from (regexp_replace(' ' || street_name2 || ' ', ' Ave ', ' Avenue ', 'gi')))
+
+	when ' ' || street_name2 || ' ' ~~* '% Hwy %'
+	then trim(both ' ' from (regexp_replace(' ' || street_name2 || ' ', ' Hwy ', ' Highway ', 'gi')))
+
+	when ' ' || street_name2 || ' ' ~~* '% Hw %'
+	then trim(both ' ' from (regexp_replace(' ' || street_name2 || ' ', ' Hw ', ' Highway ', 'gi')))
+
+	when ' ' || street_name2 || ' ' ~~* '% Rd %'
+	then trim(both ' ' from (regexp_replace(' ' || street_name2 || ' ', ' Rd ', ' Road ', 'gi')))
 
 	else street_name2
 
@@ -373,6 +433,12 @@ then
 
 	else unit_number1
 	end
+	
+when (street_name_array6[1] similar to '(Th|Ph)' and street_name_array6[2] ~ '^[0-9]+$')
+then upper(street_name_array6[1]) || street_name_array6[2]
+
+when (street_name_array6[1] similar to '(Th|Ph)%' and substring(street_name_array6[1] from 3) ~ '^[0-9]+$')
+then upper(street_name_array6[1])
 
 else unit_number1
 end unit_number2,
@@ -388,6 +454,12 @@ then
 
 	else street_number1
 	end
+
+when (street_name_array6[1] similar to '(Th|Ph)' and street_name_array6[2] ~ '^[0-9]+$')
+then street_name_array6[3]
+
+when (street_name_array6[1] similar to '(Th|Ph)%' and substring(street_name_array6[1] from 3) ~ '^[0-9]+$')
+then street_name_array6[2]
 	
 else street_number1
 
@@ -401,6 +473,12 @@ then
 
 	else street_name_array6
 	end
+
+when (street_name_array6[1] similar to '(Th|Ph)' and street_name_array6[2] ~ '^[0-9]+$')
+then street_name_array6[4 : array_upper(street_name_array6, 1)]
+
+when (street_name_array6[1] similar to '(Th|Ph)%' and substring(street_name_array6[1] from 3) ~ '^[0-9]+$')
+then street_name_array6[3 : array_upper(street_name_array6, 1)]
 
 else street_name_array6
 end street_name_array5
@@ -503,20 +581,28 @@ CASE WHEN (array_to_string(street_name_array4, ' ') not like '%(East Boulevard|W
 THEN
 	CASE WHEN ('W' = ANY (street_name_array4) 
 		OR 
+		'W.' = ANY (street_name_array4)
+		OR 
 		'West' = ANY (street_name_array4))
 	THEN 'West'
 
 	WHEN ('N' = ANY (street_name_array4) 
+		OR 
+		'N.' = ANY (street_name_array4)
 		OR 
 		'North' = ANY (street_name_array4))
 	THEN 'North'
 
 	WHEN ('S' = ANY (street_name_array4) 
 		OR 
+		'S.' = ANY (street_name_array4)
+		OR 
 		'South' = ANY (street_name_array4))
 	THEN 'South'
 
 	WHEN ('E' = ANY (street_name_array4) 
+		OR 
+		'E.' = ANY (street_name_array4)
 		OR 
 		'East' = ANY (street_name_array4))
 	THEN 'East'
@@ -557,23 +643,23 @@ THEN
 		'Southeast' = ANY (street_name_array4))
 	THEN 'SE'
 
-	ELSE regexp_replace(regexp_replace(regexp_replace(regexp_replace(' ' || street_direction || ' ', ' S ', 'South', 'g'), ' E ', 'East', 'g'),' N ', 'North', 'g'), ' W ', 'West', 'g')
+	ELSE trim(both ' ' from (regexp_replace(regexp_replace(regexp_replace(regexp_replace(' ' || street_direction || ' ', ' S ', 'South', 'g'), ' E ', 'East', 'g'),' N ', 'North', 'g'), ' W ', 'West', 'g')))
 	END
 
 WHEN array_to_string(street_name_array4, ' ') like '%(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)%' 
 	and array_to_string(street_name_array4, ' ') not like '(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)'
 	-- Need to make sure to extract the right direction
 THEN 
-	CASE WHEN ' ' || regexp_replace(array_to_string(street_name_array4, ' '), '(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)', '') || ' ' like '%( West | W )%'
+	CASE WHEN ' ' || regexp_replace(array_to_string(street_name_array4, ' '), '(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)', '') || ' ' like '%( West | W | W. )%'
 	THEN 'West'
 
-	WHEN ' ' || regexp_replace(array_to_string(street_name_array4, ' '), '(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)', '') || ' ' like '%( North | N )%'
+	WHEN ' ' || regexp_replace(array_to_string(street_name_array4, ' '), '(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)', '') || ' ' like '%( North | N | N. )%'
 	THEN 'North'
 
-	WHEN ' ' || regexp_replace(array_to_string(street_name_array4, ' '), '(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)', '') || ' ' like '%( South | S )%'
+	WHEN ' ' || regexp_replace(array_to_string(street_name_array4, ' '), '(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)', '') || ' ' like '%( South | S | S. )%'
 	THEN 'South'
 
-	WHEN ' ' || regexp_replace(array_to_string(street_name_array4, ' '), '(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)', '') || ' ' like '%( East | E )%'
+	WHEN ' ' || regexp_replace(array_to_string(street_name_array4, ' '), '(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)', '') || ' ' like '%( East | E | E. )%'
 	THEN 'East'
 
 	WHEN ' ' || regexp_replace(array_to_string(street_name_array4, ' '), '(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)', '') || ' ' like '%( NW | Nw | nw | Northwest )%'
@@ -598,18 +684,26 @@ END as new_street_direction,
 
 -- Removing direction from street address:
 CASE WHEN ('W' = ANY (street_name_array4) 
+	OR
+	'W.' = ANY(street_name_array4)
 	OR 
 	'West' = ANY (street_name_array4) 
 	OR 
 	'N' = ANY (street_name_array4) 
+	OR
+	'N.' = ANY(street_name_array4)
 	OR 
 	'North' = ANY (street_name_array4) 
 	OR 
 	'S' = ANY (street_name_array4) 
+	OR
+	'S.' = ANY(street_name_array4)
 	OR 
 	'South' = ANY (street_name_array4) 
 	OR 
-	'E' = ANY (street_name_array4) 
+	'E' = ANY (street_name_array4)
+	OR
+	'E.' = ANY(street_name_array4)
 	OR 
 	'East' = ANY (street_name_array4) 
 	OR 
@@ -646,7 +740,7 @@ CASE WHEN ('W' = ANY (street_name_array4)
 	'Northwest' = ANY (street_name_array4))
 THEN
 	CASE WHEN (array_to_string(street_name_array4, ' ') not like '%(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)%')
-	THEN string_to_array(trim(both ' ' from regexp_replace(' ' || array_to_string(street_name_array4, ' ') || ' ', '( north | n | east | e | west | w | south | s | nw | northwest | se | southeast | sw | southwest | ne | northeast )', ' ', 'gi')), ' ')
+	THEN string_to_array(trim(both ' ' from regexp_replace(' ' || array_to_string(street_name_array4, ' ') || ' ', '( north | n | n. | east | e | e. | west | w | w. | south | s | s. | nw | northwest | se | southeast | sw | southwest | ne | northeast )', ' ', 'gi')), ' ')
 
 	WHEN array_to_string(street_name_array4, ' ') like '%East Boulevard%'
 	THEN string_to_array('East Boulevard', ' ')
@@ -817,7 +911,9 @@ CASE WHEN street_name_array3[1] ~ '^(-)?[0-9]+$'
 	and 
 	(array_length(street_name_array3, 1) > 2 or street_name_array3[2] ilike 'kingsway')
 THEN 
-	CASE WHEN (street_number2 = '' 
+	CASE WHEN (street_number2 is null 
+		or 
+		street_number2 = ''
 		or 
 		substring(street_number3 from char_length(street_number3) for 1) = substring(new_unit_number from char_length(new_unit_number) for 1))
 	THEN (street_name_array3[1])
@@ -868,10 +964,11 @@ WHEN ((street_name_array2[1] not like 'No.'
 	and 
 	street_name_array2[1] not like 'No') 
 	and 
-	(substring(street_name_array2[2] from 1 for 1) ~ '^[0-9]' 
+	street_name_array2[2] ~ '^[0-9]+$' 
 	and 
-	substring(street_name_array2[2] from char_length(street_name_array2[2]) for 1) ~ '^[0-9]') 
-	and lower(street_name_array2[3]) ~ '^[a-z]')
+	street_name_array2[3] !~~* 'highway'
+	and 
+	lower(street_name_array2[3]) ~ '^[a-z]')
 THEN 
 	CASE WHEN substring(street_name_array2[2] from char_length(street_name_array2[2]) for 1) = '1'
 	THEN ARRAY[street_name_array2[1]] || ARRAY[(street_name_array2[2] || 'st')] || street_name_array2[3 : array_upper(street_name_array2, 1)]
@@ -897,47 +994,48 @@ from properties2
 
 
 
-select	id,
-	uid,
-	slug, 
-	parcel_slug, 
-	street_slug, 
-	postal_code_slug, 
-	street_number, 
-	new_street_number, 
-	street_name, 
-	array_to_string(new_street_name_array, ' ') as new_street_name, 
-	street_direction, 
-	new_street_direction, 
-	unit_number, 
-	new_unit_number, 
-	city_id, 
-	postal_code, 
-	formatted_address, 
-	latitude, 
-	longitude, 
-	geocode_source, 
-	geocode_type, 
-	geocode_status, 
-	legal_type, 
-	strata_fee, 
-	property_tax, 
-	year_built, 
-	floor_area, 
-	bedroom, 
-	bathroom, 
-	assessed_type, 
-	lot_size, 
-	created_at, 
-	updated_at, 
-	den, 
-	normalized_type, 
-	parcel, 
-	published, 
-	lot_frontage, 
-	lot_depth, 
-	use_point_for_street_view, 
-	matchable
+select	*,
+	-- id,
+-- 	uid,
+-- 	slug, 
+-- 	parcel_slug, 
+-- 	street_slug, 
+-- 	postal_code_slug, 
+-- 	street_number, 
+-- 	new_street_number, 
+-- 	street_name, 
+	array_to_string(new_street_name_array, ' ') as new_street_name--,
+	-- street_direction, 
+-- 	new_street_direction, 
+-- 	unit_number, 
+-- 	new_unit_number, 
+-- 	city_id, 
+-- 	postal_code, 
+-- 	formatted_address, 
+-- 	latitude, 
+-- 	longitude, 
+-- 	geocode_source, 
+-- 	geocode_type, 
+-- 	geocode_status, 
+-- 	legal_type, 
+-- 	strata_fee, 
+-- 	property_tax, 
+-- 	year_built, 
+-- 	floor_area, 
+-- 	bedroom, 
+-- 	bathroom, 
+-- 	assessed_type, 
+-- 	lot_size, 
+-- 	created_at, 
+-- 	updated_at, 
+-- 	den, 
+-- 	normalized_type, 
+-- 	parcel, 
+-- 	published, 
+-- 	lot_frontage, 
+-- 	lot_depth, 
+-- 	use_point_for_street_view, 
+-- 	matchable
 from properties1;
 
 select * from new_properties limit 50;
