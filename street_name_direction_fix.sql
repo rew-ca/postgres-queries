@@ -28,7 +28,7 @@ where ((unit_number !~~* '%bl%' and unit_number !~~* '%lt%' and unit_number !~~*
 and 
 ((street_name !~~* '%no name%' and street_name not similar to '%(Lot | Lt )%' and street_name !~~* '%right of way%' and street_name !~~* '%access line%') or street_name is null)
 and
-((street_number !~~* '%bl%' and street_number !~~* '%lt%' and street_number !~~* '%lot%' and street_number !~~* '%sl%' and street_number !~~* '%pcl%' and street_number !~~* '%parcel%' and street_number !~~* '%.%' and street_number !~~* '"road"' and street_number !~~* '%(itel)%' and street_number !~~* '%mile%' and street_number !~~* '%track%' and street_number !~~* '%rogers%' and street_number !~~* 'rrrrr' and street_number !~~* '%cls%' and street_number !~~* '%fsf%' and street_number !~~* '%access%' and street_number !~~* '%lane%' and street_number !~~* '%paper%' and street_number !~~* '%scott%') or street_number is null)
+((street_number !~~* '%bl%' and street_number !~~* '%lt%' and street_number !~~* '%lot%' and street_number !~~* '%sl%' and street_number !~~* '%pcl%' and street_number !~~* '%parcel%' and street_number !~~* '%.%' and street_number !~~* '"road"' and street_number !~~* '%(itel)%' and street_number !~~* '%mile%' and street_number !~~* '%track%' and street_number !~~* '%rogers%' and street_number !~~* 'rrrrr' and street_number !~~* '%cls%' and street_number !~~* '%fsf%' and street_number !~~* '%access%' and street_number !~~* '%lane%' and street_number !~~* '%paper%' and street_number !~~* '%scott%' and street_number !~~* 'l0t%' and street_number !~~* 'l%' and street_number !~~* 'site%' and street_number !~~* 'sec%' and street_number !~~* 'w13') or street_number is null)
 and 
 street_name !~~* 'Address Assigned Bb Street' 
 										)
@@ -54,7 +54,7 @@ select *,
 	when street_number ~~ '%-%'
 	then (string_to_array(street_number, '-'))[array_upper(string_to_array(street_number, '-'), 1)]
 
-	when street_number similar to '(0|Week|Wk|Th%|Ph%)'
+	when street_number similar to '(0|Week|Wk|Th%|Ph|Ch%)'
 	then null
 
 	when street_number ~~* 'dl%'
@@ -435,7 +435,12 @@ then
 	end
 	
 when (street_name_array6[1] similar to '(Th|Ph)' and street_name_array6[2] ~ '^[0-9]+$')
-then upper(street_name_array6[1]) || street_name_array6[2]
+then 
+	case when street_name_array6[3] ~ '^[0-9]+$'
+	then upper(street_name_array6[1]) || street_name_array6[2]
+
+	else street_name_array6[1]
+	end
 
 when (street_name_array6[1] similar to '(Th|Ph)%' and substring(street_name_array6[1] from 3) ~ '^[0-9]+$')
 then upper(street_name_array6[1])
@@ -456,7 +461,12 @@ then
 	end
 
 when (street_name_array6[1] similar to '(Th|Ph)' and street_name_array6[2] ~ '^[0-9]+$')
-then street_name_array6[3]
+then
+	case when street_name_array6[3] ~ '^[0-9]+$'
+	then street_name_array6[3]
+
+	else street_name_array6[2]
+	end
 
 when (street_name_array6[1] similar to '(Th|Ph)%' and substring(street_name_array6[1] from 3) ~ '^[0-9]+$')
 then street_name_array6[2]
@@ -475,7 +485,12 @@ then
 	end
 
 when (street_name_array6[1] similar to '(Th|Ph)' and street_name_array6[2] ~ '^[0-9]+$')
-then street_name_array6[4 : array_upper(street_name_array6, 1)]
+then
+	case when street_name_array6[3] ~ '^[0-9]+$'
+	then street_name_array6[4 : array_upper(street_name_array6, 1)]
+
+	else street_name_array6[3 : array_upper(street_name_array6, 1)]
+	end
 
 when (street_name_array6[1] similar to '(Th|Ph)%' and substring(street_name_array6[1] from 3) ~ '^[0-9]+$')
 then street_name_array6[3 : array_upper(street_name_array6, 1)]
@@ -566,7 +581,7 @@ CASE WHEN char_length(street_name_array5[1]) = 1
 THEN ''
 ELSE unit_number2
 
-END new_unit_number
+END unit_number3
 
 from properties5
 			)
@@ -673,6 +688,9 @@ THEN
 
 	WHEN ' ' || regexp_replace(array_to_string(street_name_array4, ' '), '(East Boulevard|West Boulevard|Nicklaus North Boulevard|North Road|Old West Saanich Road|North Sward Road|East Road|Broadway East Place|West Reed Road|North Parallel Road|South Parallel Road|West Saanich Road|East Saanich Road|North Ridge Road|Northwest Road|Northwest Bay Road|South Dyke Road|North Sward Road|Broadway East Street|North Charlotte Road|South Sumas Road|Old West Saanich Road|Old East Road|North Bluff Road|North Fletcher Road|Piccadilly South|North Dairy Road|North Nicomen Road|South Fletcher Road|North Fletcher Road|East Sooke Road|East Kent Avenue|West Avenue|North Burgess Avenue|West Railway Avenue|North Avenue|North Arm Avenue|West Beach Avenue|North Railway Avenue|East Mall|West Mall|North Fraser Crescent|North Fraser Way|South Fraser Way|West Vista Court|West Beach Avenue|North Sward Drive|West View Crescent|South Shore Crescent|West Street)', '') || ' ' like '%( SE | Se | se | Southeast )%'
 	THEN 'SE'
+
+	WHEN array_to_string(street_name_array4, ' ') ~~* 'Granville Street'
+	THEN null
 
 	ELSE regexp_replace(regexp_replace(regexp_replace(regexp_replace(' ' || street_direction || ' ', ' S ', 'South', 'g'), ' E ', 'East', 'g'),' N ', 'North', 'g'), ' W ', 'West', 'g')
 
@@ -915,7 +933,9 @@ THEN
 		or 
 		street_number2 = ''
 		or 
-		substring(street_number3 from char_length(street_number3) for 1) = substring(new_unit_number from char_length(new_unit_number) for 1))
+		substring(street_number3 from char_length(street_number3) for 1) = substring(unit_number3 from char_length(unit_number3) for 1)
+		or (street_number3 ~ '^(-)?[0-9]+$' and @(street_number3::int - street_name_array3[1]::int) > 100)
+		)
 	THEN (street_name_array3[1])
 
 	ELSE street_number3 || '-' || street_name_array3[1]
@@ -924,16 +944,34 @@ THEN
 ELSE street_number3
 END new_street_number,
 
+
 CASE WHEN street_name_array3[1] ~ '^(-)?[0-9]+$'
 	and 
 	(array_length(street_name_array3, 1) > 2 or street_name_array3[2] ilike 'kingsway')
 THEN (street_name_array3[2 : array_upper(street_name_array3, 1)])
 
 ELSE street_name_array3
-END street_name_array2
+END street_name_array2,
+
+
+CASE WHEN (street_name_array3[1] ~ '^(-)?[0-9]+$'
+	and 
+	(array_length(street_name_array3, 1) > 2 or street_name_array3[2] ilike 'kingsway')
+	and
+	street_number3 ~ '^(-)?[0-9]+$'
+	and
+	@(street_number3::int - street_name_array3[1]::int) > 100
+	)
+THEN
+	case when unit_number3 is null
+	then street_number3
+	else unit_number3 || street_number3
+	end
+
+ELSE unit_number3
+END new_unit_number
 
 from properties3
-
 	)
 
 -- create new_properties
