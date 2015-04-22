@@ -1,4 +1,6 @@
-﻿create table new_properties_dup_id as 
+﻿drop table new_properties_dup_id;
+
+create table new_properties_dup_id as 
 (
 select *
 from new_properties
