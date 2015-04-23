@@ -1,4 +1,7 @@
-﻿drop table new_properties;
+﻿-- Remove obviously bad data
+delete * from properties where id in (992218);
+
+drop table new_properties;
 
 create table new_properties as 
 with properties1 as(
@@ -14,8 +17,8 @@ with properties1 as(
 										with properties11 as(
 											with properties12 as(
 
--- properties12
--- Make first selection and remove all properties without a streetname and with the name Lot as the unit number
+-- Filter invalid property addresses
+-- Store all properties with valid addresses in properties12 table
 select *,
 	case when street_name ~~ '0  %'
 	then regexp_replace(street_name, '0  ', '', 'g')
@@ -24,13 +27,14 @@ select *,
 	
 	end as street_name0
 from properties
+-- invalid unit numbers
 where ((unit_number !~~* '%bl%' and unit_number !~~* '%lt%' and unit_number !~~* '%lot%' and unit_number !~~* '%sl%' and unit_number !~~* '%pcl%' and unit_number !~~* '%parcel%') or unit_number is null) 
 and 
+-- invalid street names
 ((street_name !~~* '%no name%' and street_name not similar to '%(Lot | Lt )%' and street_name !~~* '%right of way%' and street_name !~~* '%access line%') or street_name is null)
 and
+-- invalid street_number
 ((street_number !~~* '%bl%' and street_number !~~* '%lt%' and street_number !~~* '%lot%' and street_number !~~* '%sl%' and street_number !~~* '%pcl%' and street_number !~~* '%parcel%' and street_number !~~* '%.%' and street_number !~~* '"road"' and street_number !~~* '%(itel)%' and street_number !~~* '%mile%' and street_number !~~* '%track%' and street_number !~~* '%rogers%' and street_number !~~* 'rrrrr' and street_number !~~* '%cls%' and street_number !~~* '%fsf%' and street_number !~~* '%access%' and street_number !~~* '%lane%' and street_number !~~* '%paper%' and street_number !~~* '%scott%' and street_number !~~* 'l0t%' and street_number !~~* 'l%' and street_number !~~* 'site%' and street_number !~~* 'sec%' and street_number !~~* 'w13') or street_number is null)
-and 
-street_name !~~* 'Address Assigned Bb Street' 
 										)
 										
 -- properties11
