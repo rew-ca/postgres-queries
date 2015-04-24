@@ -37,7 +37,7 @@ and
 ((street_number !~~* '%bl%' and street_number !~~* '%lt%' and street_number !~~* '%lot%' and street_number !~~* '%sl%' and street_number !~~* '%pcl%' and street_number !~~* '%parcel%' and street_number !~~* '%.%' and street_number !~~* '"road"' and street_number !~~* '%(itel)%' and street_number !~~* '%mile%' and street_number !~~* '%track%' and street_number !~~* '%rogers%' and street_number !~~* 'rrrrr' and street_number !~~* '%cls%' and street_number !~~* '%fsf%' and street_number !~~* '%access%' and street_number !~~* '%lane%' and street_number !~~* '%paper%' and street_number !~~* '%scott%' and street_number !~~* 'l0t%' and street_number !~~* 'l%' and street_number !~~* 'site%' and street_number !~~* 'sec%' and street_number !~~* 'w13') or street_number is null)
 										)
 										
--- properties11
+-- Creates properties11 from properties12
 -- Fix street name, street number and unit number when street number in unit number and part of street name in street number
 select *,
 	case when street_number !~ '^[0-9]+$' and unit_number ~ '^[0-9]+$'
