@@ -4136,7 +4136,7 @@ alter table property_details_temp12
 	rename property_tax1 to new_property_tax;
 alter table property_details_temp12
 	drop column property_tax2;
---
+
 -- correct year built
 update property_details_temp12
 	set year_built1 = null
@@ -4442,7 +4442,7 @@ insert into property_details select * from property_details_dup_fix10;
 insert into property_details select * from property_details_dup_fix11;
 insert into property_details select * from property_details_dup_fix12;
 
-update property_details drop column id;
+alter table property_details drop column "id"
 
 drop table property_details_temp1;
 drop table property_details_temp2;
