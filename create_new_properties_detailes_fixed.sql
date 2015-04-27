@@ -6,7 +6,7 @@ select * from
 new_properties_dup_id
 left join property_details
 using (dup_id)
-)
+);
 
 update new_properties_detailes_fixed
 	set new_legal_type = legal_type
@@ -33,7 +33,7 @@ update new_properties_detailes_fixed
 	where new_bedroom is null;
 
 update new_properties_detailes_fixed
-	set new bathroom = bathroom
+	set new_bathroom = bathroom
 	where new_bathroom is null;
 
 update new_properties_detailes_fixed
@@ -49,13 +49,13 @@ update new_properties_detailes_fixed
 	where new_den is null;
 
 update new_properties_detailes_fixed
-	new_normalized_type = normalized_type
+	set new_normalized_type = normalized_type
 	where new_normalized_type is null;
 
 update new_properties_detailes_fixed
-	new_lot_frontage = lot_frontage
+	set new_lot_frontage = lot_frontage
 	where new_lot_frontage is null;
 
 update new_properties_detailes_fixed
-	new_lot_depth = lot_depth
+	set new_lot_depth = lot_depth
 	where new_lot_depth is null;
