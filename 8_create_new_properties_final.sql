@@ -40,7 +40,7 @@ create table new_properties_final as (
 		np.matchable as matchable,
 		np.uid as uid,
 		np.dup_id as dup_id
-	from new_properties_detailes_fixed np, cities c, provinces p, countries co
+	from new_properties_dups_deleted np, cities c, provinces p, countries co
 	where np.city_id = c.id and 
 		c.province_id = p.id and 
 		p.country_id = co.id

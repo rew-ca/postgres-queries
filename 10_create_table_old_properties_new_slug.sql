@@ -1,7 +1,8 @@
-﻿drop table old_properties_new_slug;
+﻿drop table old_properties_new_slug_uid;
 
-create table old_properties_new_slug as(
-select id,
+create table old_properties_new_slug_uid as(
+select dup_id,
+	np.id,
 	np.slug,
 	ns.slug as new_slug,
 	np.parcel_slug,
@@ -37,8 +38,9 @@ select id,
 	np.lot_depth,
 	np.use_point_for_street_view,
 	np.matchable,
-	np.uid
+	np.uid,
+	ns.uid as new_uid
 	from new_properties_dup_id np
-	left join dup_id_new_slug ns
+	left join dup_id_new_slug_uid ns
 	using (dup_id)
 );
