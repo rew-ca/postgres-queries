@@ -8,25 +8,9 @@ left join property_details
 using (dup_id)
 );
 
--- update new_properties_detailes_fixed
--- 	set new_latitude = latitude
--- 	where new_latitude is null;
--- 
--- update new_properties_detailes_fixed
--- 	set new_longitude = longitude
--- 	where new_longitude is null;
--- 
--- update new_properties_detailes_fixed
--- 	set new_geocode_source = geocode_source
--- 	where new_geocode_source is null;
--- 
--- update new_properties_detailes_fixed
--- 	set new_geocode_type = geocode_type
--- 	where new_geocode_type is null;
--- 
--- update new_properties_detailes_fixed
--- 	set new_geocode_status = geocode_status
--- 	where new_geocode_status is null;
+update new_properties_detailes_fixed
+	set new_legal_type = legal_type
+	where new_legal_type is null and legal_type is not null;
 
 update new_properties_detailes_fixed
 	set new_strata_fee = strata_fee
