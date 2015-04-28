@@ -1,7 +1,7 @@
 ﻿create new_properties_final as (
 	select 
 		np.id as np.id,
-		regexp_replace(regexp_replace(regexp_replace(lower(nnp.new_unit_number || '-' || nnp.new_street_number || '-' || nnp.new_street_direction || '-' || nnp.new_street_name || '-' || c.city_name), ' ', '-', 'g'), '--', '-', 'g'), '--', '-', 'g') as slug,
+		regexp_replace(regexp_replace(regexp_replace(lower(nnp.new_unit_number || '-' || nnp.new_street_number || '-' || nnp.new_street_direction || '-' || nnp.new_street_name || '-' || c.city_name || '-' || uid), ' ', '-', 'g'), '--', '-', 'g'), '--', '-', 'g') as slug,
 		regexp_replace(regexp_replace(regexp_replace(lower(nnp.new_street_number || '-' || nnp.new_street_direction || '-' || nnp.new_street_name || '-' || c.city_name), ' ', '-', 'g'), '--', '-', 'g'), '--', '-', 'g') as nnp.parcel_slug,
 		regexp_replace(regexp_replace(regexp_replace(lower(c.city_name || '/' || nnp.new_street_direction || '-' || nnp.new_street_name), ' ', '-', 'g'), '--', '-', 'g'), '--', '-', 'g') as nnp.street_slug,
 		lower(c.city_name || '/' || nnp.postal_code) as nnp.postal_code_slug,

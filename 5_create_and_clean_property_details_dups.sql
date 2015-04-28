@@ -3,6 +3,16 @@
 -- create table property_details_temp1 as join of new_properties_dup_id with itself
 create table property_details_temp1 as
 (select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
 	np1.legal_type as legal_type1, 
 	np2.legal_type as legal_type2, 
 	np1.strata_fee as strata_fee1, 
@@ -34,6 +44,108 @@ left join new_properties_dup_id  np2
 using (dup_id)
 where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp1
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+
+-- change change field name and delete dup field
+alter table property_details_temp1
+	rename latitude1 to new_latitude;
+alter table property_details_temp1
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp1
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp1
+	rename longitude1 to new_longitude;
+alter table property_details_temp1
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp1
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp1
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp1
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp1
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp1
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp1
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp1
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+
+-- change change field name and delete dup field
+alter table property_details_temp1
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp1
+	drop column geocode_status2;
 
 -- correct legal_type
 update property_details_temp1
@@ -379,38 +491,148 @@ alter table property_details_dup_fix1 add column id serial;
 -- PART 2
 -- create table property_details_temp2 as join of new_properties_dup_id with itself
 create table property_details_temp2 as
-(select pd1.dup_id, 
-	pd1.new_legal_type as legal_type1, 
-	pd2.new_legal_type as legal_type2, 
-	pd1.new_strata_fee as strata_fee1, 
-	pd2.new_strata_fee as strata_fee2, 
-	pd1.new_property_tax as property_tax1,
-	pd2.new_property_tax as property_tax2,
-	pd1.new_year_built as year_built1,
-	pd2.new_year_built as year_built2,
-	pd1.new_floor_area as floor_area1,
-	pd2.new_floor_area as floor_area2,
-	pd1.new_bedroom as bedroom1,
-	pd2.new_bedroom as bedroom2,
-	pd1.new_bathroom as bathroom1,
-	pd2.new_bathroom as bathroom2,
-	pd1.new_assessed_type as assessed_type1,
-	pd2.new_assessed_type as assessed_type2,
-	pd1.new_lot_size as lot_size1,
-	pd2.new_lot_size as lot_size2,
-	pd1.new_den as den1,
-	pd2.new_den as den2,
-	pd1.new_normalized_type as normalized_type1,
-	pd2.new_normalized_type as normalized_type2,
-	pd1.new_lot_frontage as lot_frontage1,
-	pd2.new_lot_frontage as lot_frontage2,
-	pd1.new_lot_depth as lot_depth1,
-	pd2.new_lot_depth as lot_depth2
-from property_details_dup_fix1 pd1
-left join property_details_dup_fix1  pd2
+(select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
+	np1.legal_type as legal_type1, 
+	np2.legal_type as legal_type2, 
+	np1.strata_fee as strata_fee1, 
+	np2.strata_fee as strata_fee2, 
+	np1.property_tax as property_tax1,
+	np2.property_tax as property_tax2,
+	np1.year_built as year_built1,
+	np2.year_built as year_built2,
+	np1.floor_area as floor_area1,
+	np2.floor_area as floor_area2,
+	np1.bedroom as bedroom1,
+	np2.bedroom as bedroom2,
+	np1.bathroom as bathroom1,
+	np2.bathroom as bathroom2,
+	np1.assessed_type as assessed_type1,
+	np2.assessed_type as assessed_type2,
+	np1.lot_size as lot_size1,
+	np2.lot_size as lot_size2,
+	np1.den as den1,
+	np2.den as den2,
+	np1.normalized_type as normalized_type1,
+	np2.normalized_type as normalized_type2,
+	np1.lot_frontage as lot_frontage1,
+	np2.lot_frontage as lot_frontage2,
+	np1.lot_depth as lot_depth1,
+	np2.lot_depth as lot_depth2
+from new_properties_dup_id np1
+left join new_properties_dup_id  np2
 using (dup_id)
-where pd1.id != pd2.id)
+where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp2
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp2
+	rename latitude1 to new_latitude;
+alter table property_details_temp2
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp2
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp2
+	rename longitude1 to new_longitude;
+alter table property_details_temp2
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp2
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp2
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp2
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp2
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp2
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp2
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp2
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp2
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp1
+	drop column geocode_status2;
 
 -- correct legal_type
 update property_details_temp2
@@ -743,40 +965,150 @@ alter table property_details_dup_fix2 add column id serial;
 -----------------------------------------------------------------------------------------------------------------------
 
 -- PART 3
--- create table property_details_temp5 as join of new_properties_dup_id with itself
+-- create table property_details_temp3 as join of new_properties_dup_id with itself
 create table property_details_temp3 as
-(select pd1.dup_id, 
-	pd1.new_legal_type as legal_type1, 
-	pd2.new_legal_type as legal_type2, 
-	pd1.new_strata_fee as strata_fee1, 
-	pd2.new_strata_fee as strata_fee2, 
-	pd1.new_property_tax as property_tax1,
-	pd2.new_property_tax as property_tax2,
-	pd1.new_year_built as year_built1,
-	pd2.new_year_built as year_built2,
-	pd1.new_floor_area as floor_area1,
-	pd2.new_floor_area as floor_area2,
-	pd1.new_bedroom as bedroom1,
-	pd2.new_bedroom as bedroom2,
-	pd1.new_bathroom as bathroom1,
-	pd2.new_bathroom as bathroom2,
-	pd1.new_assessed_type as assessed_type1,
-	pd2.new_assessed_type as assessed_type2,
-	pd1.new_lot_size as lot_size1,
-	pd2.new_lot_size as lot_size2,
-	pd1.new_den as den1,
-	pd2.new_den as den2,
-	pd1.new_normalized_type as normalized_type1,
-	pd2.new_normalized_type as normalized_type2,
-	pd1.new_lot_frontage as lot_frontage1,
-	pd2.new_lot_frontage as lot_frontage2,
-	pd1.new_lot_depth as lot_depth1,
-	pd2.new_lot_depth as lot_depth2
-from property_details_dup_fix2 pd1
-left join property_details_dup_fix2  pd2
+(select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
+	np1.legal_type as legal_type1, 
+	np2.legal_type as legal_type2, 
+	np1.strata_fee as strata_fee1, 
+	np2.strata_fee as strata_fee2, 
+	np1.property_tax as property_tax1,
+	np2.property_tax as property_tax2,
+	np1.year_built as year_built1,
+	np2.year_built as year_built2,
+	np1.floor_area as floor_area1,
+	np2.floor_area as floor_area2,
+	np1.bedroom as bedroom1,
+	np2.bedroom as bedroom2,
+	np1.bathroom as bathroom1,
+	np2.bathroom as bathroom2,
+	np1.assessed_type as assessed_type1,
+	np2.assessed_type as assessed_type2,
+	np1.lot_size as lot_size1,
+	np2.lot_size as lot_size2,
+	np1.den as den1,
+	np2.den as den2,
+	np1.normalized_type as normalized_type1,
+	np2.normalized_type as normalized_type2,
+	np1.lot_frontage as lot_frontage1,
+	np2.lot_frontage as lot_frontage2,
+	np1.lot_depth as lot_depth1,
+	np2.lot_depth as lot_depth2
+from new_properties_dup_id np1
+left join new_properties_dup_id  np2
 using (dup_id)
-where pd1.id != pd2.id)
+where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp3
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp3
+	rename latitude1 to new_latitude;
+alter table property_details_temp3
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp3
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp3
+	rename longitude1 to new_longitude;
+alter table property_details_temp3
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp3
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp3
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp3
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp3
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp3
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp3
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp3
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp3
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp3
+	drop column geocode_status2;
 
 -- correct legal_type
 update property_details_temp3
@@ -1111,38 +1443,148 @@ alter table property_details_dup_fix3 add column id serial;
 -- PART 4
 -- create table property_details_temp4 as join of new_properties_dup_id with itself
 create table property_details_temp4 as
-(select pd1.dup_id, 
-	pd1.new_legal_type as legal_type1, 
-	pd2.new_legal_type as legal_type2, 
-	pd1.new_strata_fee as strata_fee1, 
-	pd2.new_strata_fee as strata_fee2, 
-	pd1.new_property_tax as property_tax1,
-	pd2.new_property_tax as property_tax2,
-	pd1.new_year_built as year_built1,
-	pd2.new_year_built as year_built2,
-	pd1.new_floor_area as floor_area1,
-	pd2.new_floor_area as floor_area2,
-	pd1.new_bedroom as bedroom1,
-	pd2.new_bedroom as bedroom2,
-	pd1.new_bathroom as bathroom1,
-	pd2.new_bathroom as bathroom2,
-	pd1.new_assessed_type as assessed_type1,
-	pd2.new_assessed_type as assessed_type2,
-	pd1.new_lot_size as lot_size1,
-	pd2.new_lot_size as lot_size2,
-	pd1.new_den as den1,
-	pd2.new_den as den2,
-	pd1.new_normalized_type as normalized_type1,
-	pd2.new_normalized_type as normalized_type2,
-	pd1.new_lot_frontage as lot_frontage1,
-	pd2.new_lot_frontage as lot_frontage2,
-	pd1.new_lot_depth as lot_depth1,
-	pd2.new_lot_depth as lot_depth2
-from property_details_dup_fix3 pd1
-left join property_details_dup_fix3  pd2
+(select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
+	np1.legal_type as legal_type1, 
+	np2.legal_type as legal_type2, 
+	np1.strata_fee as strata_fee1, 
+	np2.strata_fee as strata_fee2, 
+	np1.property_tax as property_tax1,
+	np2.property_tax as property_tax2,
+	np1.year_built as year_built1,
+	np2.year_built as year_built2,
+	np1.floor_area as floor_area1,
+	np2.floor_area as floor_area2,
+	np1.bedroom as bedroom1,
+	np2.bedroom as bedroom2,
+	np1.bathroom as bathroom1,
+	np2.bathroom as bathroom2,
+	np1.assessed_type as assessed_type1,
+	np2.assessed_type as assessed_type2,
+	np1.lot_size as lot_size1,
+	np2.lot_size as lot_size2,
+	np1.den as den1,
+	np2.den as den2,
+	np1.normalized_type as normalized_type1,
+	np2.normalized_type as normalized_type2,
+	np1.lot_frontage as lot_frontage1,
+	np2.lot_frontage as lot_frontage2,
+	np1.lot_depth as lot_depth1,
+	np2.lot_depth as lot_depth2
+from new_properties_dup_id np1
+left join new_properties_dup_id  np2
 using (dup_id)
-where pd1.id != pd2.id)
+where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp4
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp4
+	rename latitude1 to new_latitude;
+alter table property_details_temp4
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp4
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp4
+	rename longitude1 to new_longitude;
+alter table property_details_temp4
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp4
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp4
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp4
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp4
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp4
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp4
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp4
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp4
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp4
+	drop column geocode_status2;
 
 -- correct legal_type
 update property_details_temp4
@@ -1477,38 +1919,148 @@ alter table property_details_dup_fix4 add column id serial;
 -- PART 5
 -- create table property_details_temp4 as join of new_properties_dup_id with itself
 create table property_details_temp5 as
-(select pd1.dup_id, 
-	pd1.new_legal_type as legal_type1, 
-	pd2.new_legal_type as legal_type2, 
-	pd1.new_strata_fee as strata_fee1, 
-	pd2.new_strata_fee as strata_fee2, 
-	pd1.new_property_tax as property_tax1,
-	pd2.new_property_tax as property_tax2,
-	pd1.new_year_built as year_built1,
-	pd2.new_year_built as year_built2,
-	pd1.new_floor_area as floor_area1,
-	pd2.new_floor_area as floor_area2,
-	pd1.new_bedroom as bedroom1,
-	pd2.new_bedroom as bedroom2,
-	pd1.new_bathroom as bathroom1,
-	pd2.new_bathroom as bathroom2,
-	pd1.new_assessed_type as assessed_type1,
-	pd2.new_assessed_type as assessed_type2,
-	pd1.new_lot_size as lot_size1,
-	pd2.new_lot_size as lot_size2,
-	pd1.new_den as den1,
-	pd2.new_den as den2,
-	pd1.new_normalized_type as normalized_type1,
-	pd2.new_normalized_type as normalized_type2,
-	pd1.new_lot_frontage as lot_frontage1,
-	pd2.new_lot_frontage as lot_frontage2,
-	pd1.new_lot_depth as lot_depth1,
-	pd2.new_lot_depth as lot_depth2
-from property_details_dup_fix4 pd1
-left join property_details_dup_fix4  pd2
+(select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
+	np1.legal_type as legal_type1, 
+	np2.legal_type as legal_type2, 
+	np1.strata_fee as strata_fee1, 
+	np2.strata_fee as strata_fee2, 
+	np1.property_tax as property_tax1,
+	np2.property_tax as property_tax2,
+	np1.year_built as year_built1,
+	np2.year_built as year_built2,
+	np1.floor_area as floor_area1,
+	np2.floor_area as floor_area2,
+	np1.bedroom as bedroom1,
+	np2.bedroom as bedroom2,
+	np1.bathroom as bathroom1,
+	np2.bathroom as bathroom2,
+	np1.assessed_type as assessed_type1,
+	np2.assessed_type as assessed_type2,
+	np1.lot_size as lot_size1,
+	np2.lot_size as lot_size2,
+	np1.den as den1,
+	np2.den as den2,
+	np1.normalized_type as normalized_type1,
+	np2.normalized_type as normalized_type2,
+	np1.lot_frontage as lot_frontage1,
+	np2.lot_frontage as lot_frontage2,
+	np1.lot_depth as lot_depth1,
+	np2.lot_depth as lot_depth2
+from new_properties_dup_id np1
+left join new_properties_dup_id  np2
 using (dup_id)
-where pd1.id != pd2.id)
+where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp5
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp5
+	rename latitude1 to new_latitude;
+alter table property_details_temp5
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp5
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp5
+	rename longitude1 to new_longitude;
+alter table property_details_temp5
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp5
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp5
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp5
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp5
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp5
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp5
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp5
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp5
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp5
+	drop column geocode_status2;
 
 -- correct legal_type
 update property_details_temp5
@@ -1844,38 +2396,148 @@ alter table property_details_dup_fix5 add column id serial;
 -- PART 6
 -- create table property_details_temp6 as join of new_properties_dup_id with itself
 create table property_details_temp6 as
-(select pd1.dup_id, 
-	pd1.new_legal_type as legal_type1, 
-	pd2.new_legal_type as legal_type2, 
-	pd1.new_strata_fee as strata_fee1, 
-	pd2.new_strata_fee as strata_fee2, 
-	pd1.new_property_tax as property_tax1,
-	pd2.new_property_tax as property_tax2,
-	pd1.new_year_built as year_built1,
-	pd2.new_year_built as year_built2,
-	pd1.new_floor_area as floor_area1,
-	pd2.new_floor_area as floor_area2,
-	pd1.new_bedroom as bedroom1,
-	pd2.new_bedroom as bedroom2,
-	pd1.new_bathroom as bathroom1,
-	pd2.new_bathroom as bathroom2,
-	pd1.new_assessed_type as assessed_type1,
-	pd2.new_assessed_type as assessed_type2,
-	pd1.new_lot_size as lot_size1,
-	pd2.new_lot_size as lot_size2,
-	pd1.new_den as den1,
-	pd2.new_den as den2,
-	pd1.new_normalized_type as normalized_type1,
-	pd2.new_normalized_type as normalized_type2,
-	pd1.new_lot_frontage as lot_frontage1,
-	pd2.new_lot_frontage as lot_frontage2,
-	pd1.new_lot_depth as lot_depth1,
-	pd2.new_lot_depth as lot_depth2
-from property_details_dup_fix5 pd1
-left join property_details_dup_fix5  pd2
+(select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
+	np1.legal_type as legal_type1, 
+	np2.legal_type as legal_type2, 
+	np1.strata_fee as strata_fee1, 
+	np2.strata_fee as strata_fee2, 
+	np1.property_tax as property_tax1,
+	np2.property_tax as property_tax2,
+	np1.year_built as year_built1,
+	np2.year_built as year_built2,
+	np1.floor_area as floor_area1,
+	np2.floor_area as floor_area2,
+	np1.bedroom as bedroom1,
+	np2.bedroom as bedroom2,
+	np1.bathroom as bathroom1,
+	np2.bathroom as bathroom2,
+	np1.assessed_type as assessed_type1,
+	np2.assessed_type as assessed_type2,
+	np1.lot_size as lot_size1,
+	np2.lot_size as lot_size2,
+	np1.den as den1,
+	np2.den as den2,
+	np1.normalized_type as normalized_type1,
+	np2.normalized_type as normalized_type2,
+	np1.lot_frontage as lot_frontage1,
+	np2.lot_frontage as lot_frontage2,
+	np1.lot_depth as lot_depth1,
+	np2.lot_depth as lot_depth2
+from new_properties_dup_id np1
+left join new_properties_dup_id  np2
 using (dup_id)
-where pd1.id != pd2.id)
+where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp6
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp6
+	rename latitude1 to new_latitude;
+alter table property_details_temp6
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp6
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp6
+	rename longitude1 to new_longitude;
+alter table property_details_temp6
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp6
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp6
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp6
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp6
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp6
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp6
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp6
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp6
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp6
+	drop column geocode_status2;
 
 
 -- correct legal_type
@@ -2212,38 +2874,148 @@ alter table property_details_dup_fix6 add column id serial;
 -- PART 7
 -- create table property_details_temp7 as join of new_properties_dup_id with itself
 create table property_details_temp7 as
-(select pd1.dup_id, 
-	pd1.new_legal_type as legal_type1, 
-	pd2.new_legal_type as legal_type2, 
-	pd1.new_strata_fee as strata_fee1, 
-	pd2.new_strata_fee as strata_fee2, 
-	pd1.new_property_tax as property_tax1,
-	pd2.new_property_tax as property_tax2,
-	pd1.new_year_built as year_built1,
-	pd2.new_year_built as year_built2,
-	pd1.new_floor_area as floor_area1,
-	pd2.new_floor_area as floor_area2,
-	pd1.new_bedroom as bedroom1,
-	pd2.new_bedroom as bedroom2,
-	pd1.new_bathroom as bathroom1,
-	pd2.new_bathroom as bathroom2,
-	pd1.new_assessed_type as assessed_type1,
-	pd2.new_assessed_type as assessed_type2,
-	pd1.new_lot_size as lot_size1,
-	pd2.new_lot_size as lot_size2,
-	pd1.new_den as den1,
-	pd2.new_den as den2,
-	pd1.new_normalized_type as normalized_type1,
-	pd2.new_normalized_type as normalized_type2,
-	pd1.new_lot_frontage as lot_frontage1,
-	pd2.new_lot_frontage as lot_frontage2,
-	pd1.new_lot_depth as lot_depth1,
-	pd2.new_lot_depth as lot_depth2
-from property_details_dup_fix6 pd1
-left join property_details_dup_fix6  pd2
+(select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
+	np1.legal_type as legal_type1, 
+	np2.legal_type as legal_type2, 
+	np1.strata_fee as strata_fee1, 
+	np2.strata_fee as strata_fee2, 
+	np1.property_tax as property_tax1,
+	np2.property_tax as property_tax2,
+	np1.year_built as year_built1,
+	np2.year_built as year_built2,
+	np1.floor_area as floor_area1,
+	np2.floor_area as floor_area2,
+	np1.bedroom as bedroom1,
+	np2.bedroom as bedroom2,
+	np1.bathroom as bathroom1,
+	np2.bathroom as bathroom2,
+	np1.assessed_type as assessed_type1,
+	np2.assessed_type as assessed_type2,
+	np1.lot_size as lot_size1,
+	np2.lot_size as lot_size2,
+	np1.den as den1,
+	np2.den as den2,
+	np1.normalized_type as normalized_type1,
+	np2.normalized_type as normalized_type2,
+	np1.lot_frontage as lot_frontage1,
+	np2.lot_frontage as lot_frontage2,
+	np1.lot_depth as lot_depth1,
+	np2.lot_depth as lot_depth2
+from new_properties_dup_id np1
+left join new_properties_dup_id  np2
 using (dup_id)
-where pd1.id != pd2.id)
+where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp7
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp7
+	rename latitude1 to new_latitude;
+alter table property_details_temp7
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp7
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp7
+	rename longitude1 to new_longitude;
+alter table property_details_temp7
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp7
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp7
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp7
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp7
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp7
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp7
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp7
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp7
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp7
+	drop column geocode_status2;
 
 -- correct legal_type
 update property_details_temp7
@@ -2579,38 +3351,148 @@ alter table property_details_dup_fix7 add column id serial;
 -- PART 8
 -- create table property_details_temp8 as join of new_properties_dup_id with itself
 create table property_details_temp8 as
-(select pd1.dup_id, 
-	pd1.new_legal_type as legal_type1, 
-	pd2.new_legal_type as legal_type2, 
-	pd1.new_strata_fee as strata_fee1, 
-	pd2.new_strata_fee as strata_fee2, 
-	pd1.new_property_tax as property_tax1,
-	pd2.new_property_tax as property_tax2,
-	pd1.new_year_built as year_built1,
-	pd2.new_year_built as year_built2,
-	pd1.new_floor_area as floor_area1,
-	pd2.new_floor_area as floor_area2,
-	pd1.new_bedroom as bedroom1,
-	pd2.new_bedroom as bedroom2,
-	pd1.new_bathroom as bathroom1,
-	pd2.new_bathroom as bathroom2,
-	pd1.new_assessed_type as assessed_type1,
-	pd2.new_assessed_type as assessed_type2,
-	pd1.new_lot_size as lot_size1,
-	pd2.new_lot_size as lot_size2,
-	pd1.new_den as den1,
-	pd2.new_den as den2,
-	pd1.new_normalized_type as normalized_type1,
-	pd2.new_normalized_type as normalized_type2,
-	pd1.new_lot_frontage as lot_frontage1,
-	pd2.new_lot_frontage as lot_frontage2,
-	pd1.new_lot_depth as lot_depth1,
-	pd2.new_lot_depth as lot_depth2
-from property_details_dup_fix7 pd1
-left join property_details_dup_fix7  pd2
+(select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
+	np1.legal_type as legal_type1, 
+	np2.legal_type as legal_type2, 
+	np1.strata_fee as strata_fee1, 
+	np2.strata_fee as strata_fee2, 
+	np1.property_tax as property_tax1,
+	np2.property_tax as property_tax2,
+	np1.year_built as year_built1,
+	np2.year_built as year_built2,
+	np1.floor_area as floor_area1,
+	np2.floor_area as floor_area2,
+	np1.bedroom as bedroom1,
+	np2.bedroom as bedroom2,
+	np1.bathroom as bathroom1,
+	np2.bathroom as bathroom2,
+	np1.assessed_type as assessed_type1,
+	np2.assessed_type as assessed_type2,
+	np1.lot_size as lot_size1,
+	np2.lot_size as lot_size2,
+	np1.den as den1,
+	np2.den as den2,
+	np1.normalized_type as normalized_type1,
+	np2.normalized_type as normalized_type2,
+	np1.lot_frontage as lot_frontage1,
+	np2.lot_frontage as lot_frontage2,
+	np1.lot_depth as lot_depth1,
+	np2.lot_depth as lot_depth2
+from new_properties_dup_id np1
+left join new_properties_dup_id  np2
 using (dup_id)
-where pd1.id != pd2.id)
+where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp8
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp8
+	rename latitude1 to new_latitude;
+alter table property_details_temp8
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp8
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp8
+	rename longitude1 to new_longitude;
+alter table property_details_temp8
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp8
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp8
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp8
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp8
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp8
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp8
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp8
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp8
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp8
+	drop column geocode_status2;
 
 -- correct legal_type
 update property_details_temp8
@@ -2946,38 +3828,148 @@ alter table property_details_dup_fix8 add column id serial;
 -- PART 9
 -- create table property_details_temp8 as join of new_properties_dup_id with itself
 create table property_details_temp9 as
-(select pd1.dup_id, 
-	pd1.new_legal_type as legal_type1, 
-	pd2.new_legal_type as legal_type2, 
-	pd1.new_strata_fee as strata_fee1, 
-	pd2.new_strata_fee as strata_fee2, 
-	pd1.new_property_tax as property_tax1,
-	pd2.new_property_tax as property_tax2,
-	pd1.new_year_built as year_built1,
-	pd2.new_year_built as year_built2,
-	pd1.new_floor_area as floor_area1,
-	pd2.new_floor_area as floor_area2,
-	pd1.new_bedroom as bedroom1,
-	pd2.new_bedroom as bedroom2,
-	pd1.new_bathroom as bathroom1,
-	pd2.new_bathroom as bathroom2,
-	pd1.new_assessed_type as assessed_type1,
-	pd2.new_assessed_type as assessed_type2,
-	pd1.new_lot_size as lot_size1,
-	pd2.new_lot_size as lot_size2,
-	pd1.new_den as den1,
-	pd2.new_den as den2,
-	pd1.new_normalized_type as normalized_type1,
-	pd2.new_normalized_type as normalized_type2,
-	pd1.new_lot_frontage as lot_frontage1,
-	pd2.new_lot_frontage as lot_frontage2,
-	pd1.new_lot_depth as lot_depth1,
-	pd2.new_lot_depth as lot_depth2
-from property_details_dup_fix8 pd1
-left join property_details_dup_fix8  pd2
+(select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
+	np1.legal_type as legal_type1, 
+	np2.legal_type as legal_type2, 
+	np1.strata_fee as strata_fee1, 
+	np2.strata_fee as strata_fee2, 
+	np1.property_tax as property_tax1,
+	np2.property_tax as property_tax2,
+	np1.year_built as year_built1,
+	np2.year_built as year_built2,
+	np1.floor_area as floor_area1,
+	np2.floor_area as floor_area2,
+	np1.bedroom as bedroom1,
+	np2.bedroom as bedroom2,
+	np1.bathroom as bathroom1,
+	np2.bathroom as bathroom2,
+	np1.assessed_type as assessed_type1,
+	np2.assessed_type as assessed_type2,
+	np1.lot_size as lot_size1,
+	np2.lot_size as lot_size2,
+	np1.den as den1,
+	np2.den as den2,
+	np1.normalized_type as normalized_type1,
+	np2.normalized_type as normalized_type2,
+	np1.lot_frontage as lot_frontage1,
+	np2.lot_frontage as lot_frontage2,
+	np1.lot_depth as lot_depth1,
+	np2.lot_depth as lot_depth2
+from new_properties_dup_id np1
+left join new_properties_dup_id  np2
 using (dup_id)
-where pd1.id != pd2.id)
+where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp9
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp9
+	rename latitude1 to new_latitude;
+alter table property_details_temp9
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp9
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp9
+	rename longitude1 to new_longitude;
+alter table property_details_temp9
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp9
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp9
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp9
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp9
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp9
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp9
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp9
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp9
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp9
+	drop column geocode_status2;
 
 -- correct legal_type
 update property_details_temp9
@@ -3315,38 +4307,148 @@ alter table property_details_dup_fix9 add column id serial;
 -- PART 10
 -- create table property_details_temp10 as join of new_properties_dup_id with itself
 create table property_details_temp10 as
-(select pd1.dup_id, 
-	pd1.new_legal_type as legal_type1, 
-	pd2.new_legal_type as legal_type2, 
-	pd1.new_strata_fee as strata_fee1, 
-	pd2.new_strata_fee as strata_fee2, 
-	pd1.new_property_tax as property_tax1,
-	pd2.new_property_tax as property_tax2,
-	pd1.new_year_built as year_built1,
-	pd2.new_year_built as year_built2,
-	pd1.new_floor_area as floor_area1,
-	pd2.new_floor_area as floor_area2,
-	pd1.new_bedroom as bedroom1,
-	pd2.new_bedroom as bedroom2,
-	pd1.new_bathroom as bathroom1,
-	pd2.new_bathroom as bathroom2,
-	pd1.new_assessed_type as assessed_type1,
-	pd2.new_assessed_type as assessed_type2,
-	pd1.new_lot_size as lot_size1,
-	pd2.new_lot_size as lot_size2,
-	pd1.new_den as den1,
-	pd2.new_den as den2,
-	pd1.new_normalized_type as normalized_type1,
-	pd2.new_normalized_type as normalized_type2,
-	pd1.new_lot_frontage as lot_frontage1,
-	pd2.new_lot_frontage as lot_frontage2,
-	pd1.new_lot_depth as lot_depth1,
-	pd2.new_lot_depth as lot_depth2
-from property_details_dup_fix9 pd1
-left join property_details_dup_fix9  pd2
+(select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
+	np1.legal_type as legal_type1, 
+	np2.legal_type as legal_type2, 
+	np1.strata_fee as strata_fee1, 
+	np2.strata_fee as strata_fee2, 
+	np1.property_tax as property_tax1,
+	np2.property_tax as property_tax2,
+	np1.year_built as year_built1,
+	np2.year_built as year_built2,
+	np1.floor_area as floor_area1,
+	np2.floor_area as floor_area2,
+	np1.bedroom as bedroom1,
+	np2.bedroom as bedroom2,
+	np1.bathroom as bathroom1,
+	np2.bathroom as bathroom2,
+	np1.assessed_type as assessed_type1,
+	np2.assessed_type as assessed_type2,
+	np1.lot_size as lot_size1,
+	np2.lot_size as lot_size2,
+	np1.den as den1,
+	np2.den as den2,
+	np1.normalized_type as normalized_type1,
+	np2.normalized_type as normalized_type2,
+	np1.lot_frontage as lot_frontage1,
+	np2.lot_frontage as lot_frontage2,
+	np1.lot_depth as lot_depth1,
+	np2.lot_depth as lot_depth2
+from new_properties_dup_id np1
+left join new_properties_dup_id  np2
 using (dup_id)
-where pd1.id != pd2.id)
+where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp10
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp10
+	rename latitude1 to new_latitude;
+alter table property_details_temp10
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp10
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp10
+	rename longitude1 to new_longitude;
+alter table property_details_temp10
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp10
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp10
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp10
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp10
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp10
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp10
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp10
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp10
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp10
+	drop column geocode_status2;
 
 -- correct legal_type
 update property_details_temp10
@@ -3683,38 +4785,148 @@ alter table property_details_dup_fix10 add column id serial;
 -- PART 11
 -- create table property_details_temp11 as join of new_properties_dup_id with itself
 create table property_details_temp11 as
-(select pd1.dup_id, 
-	pd1.new_legal_type as legal_type1, 
-	pd2.new_legal_type as legal_type2, 
-	pd1.new_strata_fee as strata_fee1, 
-	pd2.new_strata_fee as strata_fee2, 
-	pd1.new_property_tax as property_tax1,
-	pd2.new_property_tax as property_tax2,
-	pd1.new_year_built as year_built1,
-	pd2.new_year_built as year_built2,
-	pd1.new_floor_area as floor_area1,
-	pd2.new_floor_area as floor_area2,
-	pd1.new_bedroom as bedroom1,
-	pd2.new_bedroom as bedroom2,
-	pd1.new_bathroom as bathroom1,
-	pd2.new_bathroom as bathroom2,
-	pd1.new_assessed_type as assessed_type1,
-	pd2.new_assessed_type as assessed_type2,
-	pd1.new_lot_size as lot_size1,
-	pd2.new_lot_size as lot_size2,
-	pd1.new_den as den1,
-	pd2.new_den as den2,
-	pd1.new_normalized_type as normalized_type1,
-	pd2.new_normalized_type as normalized_type2,
-	pd1.new_lot_frontage as lot_frontage1,
-	pd2.new_lot_frontage as lot_frontage2,
-	pd1.new_lot_depth as lot_depth1,
-	pd2.new_lot_depth as lot_depth2
-from property_details_dup_fix10 pd1
-left join property_details_dup_fix10  pd2
+(select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
+	np1.legal_type as legal_type1, 
+	np2.legal_type as legal_type2, 
+	np1.strata_fee as strata_fee1, 
+	np2.strata_fee as strata_fee2, 
+	np1.property_tax as property_tax1,
+	np2.property_tax as property_tax2,
+	np1.year_built as year_built1,
+	np2.year_built as year_built2,
+	np1.floor_area as floor_area1,
+	np2.floor_area as floor_area2,
+	np1.bedroom as bedroom1,
+	np2.bedroom as bedroom2,
+	np1.bathroom as bathroom1,
+	np2.bathroom as bathroom2,
+	np1.assessed_type as assessed_type1,
+	np2.assessed_type as assessed_type2,
+	np1.lot_size as lot_size1,
+	np2.lot_size as lot_size2,
+	np1.den as den1,
+	np2.den as den2,
+	np1.normalized_type as normalized_type1,
+	np2.normalized_type as normalized_type2,
+	np1.lot_frontage as lot_frontage1,
+	np2.lot_frontage as lot_frontage2,
+	np1.lot_depth as lot_depth1,
+	np2.lot_depth as lot_depth2
+from new_properties_dup_id np1
+left join new_properties_dup_id  np2
 using (dup_id)
-where pd1.id != pd2.id)
+where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp11
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp11
+	rename latitude1 to new_latitude;
+alter table property_details_temp11
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp11
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp11
+	rename longitude1 to new_longitude;
+alter table property_details_temp11
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp11
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp11
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp11
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp11
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp11
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp11
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp11
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp11
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp11
+	drop column geocode_status2;
 
 -- correct legal_type
 update property_details_temp11
@@ -4052,38 +5264,148 @@ alter table property_details_dup_fix11 add column id serial;
 -- PART 12
 -- create table property_details_temp12 as join of new_properties_dup_id with itself
 create table property_details_temp12 as
-(select pd1.dup_id, 
-	pd1.new_legal_type as legal_type1, 
-	pd2.new_legal_type as legal_type2, 
-	pd1.new_strata_fee as strata_fee1, 
-	pd2.new_strata_fee as strata_fee2, 
-	pd1.new_property_tax as property_tax1,
-	pd2.new_property_tax as property_tax2,
-	pd1.new_year_built as year_built1,
-	pd2.new_year_built as year_built2,
-	pd1.new_floor_area as floor_area1,
-	pd2.new_floor_area as floor_area2,
-	pd1.new_bedroom as bedroom1,
-	pd2.new_bedroom as bedroom2,
-	pd1.new_bathroom as bathroom1,
-	pd2.new_bathroom as bathroom2,
-	pd1.new_assessed_type as assessed_type1,
-	pd2.new_assessed_type as assessed_type2,
-	pd1.new_lot_size as lot_size1,
-	pd2.new_lot_size as lot_size2,
-	pd1.new_den as den1,
-	pd2.new_den as den2,
-	pd1.new_normalized_type as normalized_type1,
-	pd2.new_normalized_type as normalized_type2,
-	pd1.new_lot_frontage as lot_frontage1,
-	pd2.new_lot_frontage as lot_frontage2,
-	pd1.new_lot_depth as lot_depth1,
-	pd2.new_lot_depth as lot_depth2
-from property_details_dup_fix11 pd1
-left join property_details_dup_fix11  pd2
+(select np1.dup_id, 
+	np1.latitude as latitude1,
+	np2.latitude as latitude2,
+	np1.longitude as longitude1,
+	np2.longitude as longitude2,
+	np1.geocode_source as geocode_source1,
+	np2.geocode_source as geocode_source2,
+	np1.geocode_type as geocode_type1,
+	np2.geocode_type as geocode_type2,
+	np1.geocode_status as geocode_status1,
+	np2.geocode_status as geocode_status2,
+	np1.legal_type as legal_type1, 
+	np2.legal_type as legal_type2, 
+	np1.strata_fee as strata_fee1, 
+	np2.strata_fee as strata_fee2, 
+	np1.property_tax as property_tax1,
+	np2.property_tax as property_tax2,
+	np1.year_built as year_built1,
+	np2.year_built as year_built2,
+	np1.floor_area as floor_area1,
+	np2.floor_area as floor_area2,
+	np1.bedroom as bedroom1,
+	np2.bedroom as bedroom2,
+	np1.bathroom as bathroom1,
+	np2.bathroom as bathroom2,
+	np1.assessed_type as assessed_type1,
+	np2.assessed_type as assessed_type2,
+	np1.lot_size as lot_size1,
+	np2.lot_size as lot_size2,
+	np1.den as den1,
+	np2.den as den2,
+	np1.normalized_type as normalized_type1,
+	np2.normalized_type as normalized_type2,
+	np1.lot_frontage as lot_frontage1,
+	np2.lot_frontage as lot_frontage2,
+	np1.lot_depth as lot_depth1,
+	np2.lot_depth as lot_depth2
+from new_properties_dup_id np1
+left join new_properties_dup_id  np2
 using (dup_id)
-where pd1.id != pd2.id)
+where np1.id != np2.id)
 ;
+
+--correct latitude
+update property_details_temp12
+set latitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then latitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then latitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then latitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then latitude2
+	else latitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp12
+	rename latitude1 to new_latitude;
+alter table property_details_temp12
+	drop column latitude2;
+
+--correct longitude
+update property_details_temp12
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then longitude2
+	when geocode_status1 is null and geocode_status2 is not null
+		then longitude2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then longitude2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then longitude2
+	else longitude1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp12
+	rename longitude1 to new_longitude;
+alter table property_details_temp12
+	drop column longitude2;
+
+--correct geocode_source
+update property_details_temp12
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_source2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_source2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_source2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_source2
+	else geocode_source1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp12
+	rename geocode_source1 to new_geocode_source;
+alter table property_details_temp12
+	drop column geocode_source2;
+
+--correct geocode_type
+update property_details_temp12
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_type2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_type2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_type2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_type2
+	else geocode_type1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp12
+	rename geocode_type1 to new_geocode_type;
+alter table property_details_temp12
+	drop column geocode_type2;
+
+--correct geocode_status
+update property_details_temp12
+set longitude1 = (
+	case when geocode_status1 ~~ 'FAILED' and geocode_status2 ~~ 'SUCCESS'
+		then geocode_status2
+	when geocode_status1 is null and geocode_status2 is not null
+		then geocode_status2
+	when geocode_source1 ~~* 'google' and geocode_source2 similar to '(Vancouver Open Data|PropertyInsight)'
+		then geocode_status2
+	when geocode_source1 ~~* 'Vancouver Open Data' and geocode_source2 ~~* 'PropertyInsight'
+		then geocode_status2
+	else geocode_status1
+	end
+);
+-- change change field name and delete dup field
+alter table property_details_temp12
+	rename geocode_status1 to new_geocode_status;
+alter table property_details_temp12
+	drop column geocode_status2;
 
 -- correct legal_type
 update property_details_temp12
@@ -4444,28 +5766,28 @@ insert into property_details select * from property_details_dup_fix12;
 
 alter table property_details drop column "id"
 
-drop table property_details_temp1;
-drop table property_details_temp2;
-drop table property_details_temp3;
-drop table property_details_temp4;
-drop table property_details_temp5;
-drop table property_details_temp6;
-drop table property_details_temp7;
-drop table property_details_temp8;
-drop table property_details_temp9;
-drop table property_details_temp10;
-drop table property_details_temp11;
-drop table property_details_temp12;
+-- drop table property_details_temp1;
+-- drop table property_details_temp2;
+-- drop table property_details_temp3;
+-- drop table property_details_temp4;
+-- drop table property_details_temp5;
+-- drop table property_details_temp6;
+-- drop table property_details_temp7;
+-- drop table property_details_temp8;
+-- drop table property_details_temp9;
+-- drop table property_details_temp10;
+-- drop table property_details_temp11;
+-- drop table property_details_temp12;
 
-drop table property_details_dup_fix1;
-drop table property_details_dup_fix2;
-drop table property_details_dup_fix3;
-drop table property_details_dup_fix4;
-drop table property_details_dup_fix5;
-drop table property_details_dup_fix6;
-drop table property_details_dup_fix7;
-drop table property_details_dup_fix8;
-drop table property_details_dup_fix9;
-drop table property_details_dup_fix10;
-drop table property_details_dup_fix11;
-drop table property_details_dup_fix12;
+-- drop table property_details_dup_fix1;
+-- drop table property_details_dup_fix2;
+-- drop table property_details_dup_fix3;
+-- drop table property_details_dup_fix4;
+-- drop table property_details_dup_fix5;
+-- drop table property_details_dup_fix6;
+-- drop table property_details_dup_fix7;
+-- drop table property_details_dup_fix8;
+-- drop table property_details_dup_fix9;
+-- drop table property_details_dup_fix10;
+-- drop table property_details_dup_fix11;
+-- drop table property_details_dup_fix12;
